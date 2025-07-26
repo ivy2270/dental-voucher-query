@@ -91,7 +91,7 @@
 
         // 載入試卷列表 (GET 請求)
         fetch(GAS_URL + "?action=getallsheetnames", {
-          method: "GET", // <--- 修正為 GET 請求
+          method: "POST", // <--- 修正為 GET 請求
           headers: {
             // 對於 GET 請求，Content-Type 通常不影響行為，但如果 GAS 需要，保留它也無妨。
             "Content-Type": "text/plain;charset=utf-8",
