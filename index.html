@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>牙材券查詢系統</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', 'Noto Sans TC', sans-serif;
+        line-height: 1.8;
+        background-color: #f3f4f6;
+        font-size: 2rem;
+        background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
+          url('https://ymdd-image-tw.s3.ap-east-2.amazonaws.com/file_00000000934461f78931c0c083eafdc7.png');
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center top;
+        background-attachment: scroll;
+      }
+
+      @media (min-width: 768px) {
+        html, body {
+          font-size: 1rem;
+          background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
+            url('https://ymdd-image-tw.s3.ap-east-2.amazonaws.com/photo_2025-07-25_22-19-42.jpg');
+        }
+      }
+
+      .container {
+        max-width: 768px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .card {
+        background-color: #ffffff;
+        padding: 1.5rem;
+        border-radius: 1.25rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+        border: 1px solid #e5e7eb;
+      }
+
+      .field-label {
+        font-weight: 600;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+        font-size: 1.6rem;
+      }
+
+      .field-value {
+        color: #111827;
+        margin-bottom: 1rem;
+        font-size: 2rem;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h2>牙材券查詢系統</h2>
+        <form id="loginForm">
+          <label class="field-label">姓名：</label><br />
+          <input type="text" name="id" required style="width: 100%; padding: 0.5rem; font-size: 1.2rem;" /><br /><br />
+
+          <label class="field-label">密碼：</label><br />
+          <input type="password" name="passwd" required style="width: 100%; padding: 0.5rem; font-size: 1.2rem;" /><br /><br />
+
+          <label class="field-label">查詢試卷：</label><br />
+          <select name="exam" id="examSelect" style="width: 100%; padding: 0.5rem; font-size: 1.2rem;"></select><br /><br />
+
+          <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1.2rem; border: none; background-color: #3b82f6; color: white; border-radius: 0.5rem;">查詢</button>
+        </form>
+      </div>
+
+      <div id="result"></div>
+    </div>
+
+    <script>
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzFPhox75NkWPIPOUWHvNznCs6SBQAjLtfCAczndsBrrL6riWcD13zGVsMDssEGUH3-/exec";
+  
+  document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("examSelect");
+    const loginForm = document.getElementById("loginForm");
+    const resultDiv = document.getElementById("result");
+    const submitButton = loginForm.querySelector('button[type="submit"]');
+
+    // 載入試卷列表
+    fetch(GAS_URL + "?action=getallsheetnames")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+            data.forEach(name => {
+              const opt = document.createElement("option");
+              opt.value = name;
+              opt.textContent = name;
+              select.appendChild(opt);
+            });
+        }
+      })
+      .catch(err => {
+        console.error("無法載入試卷列表:", err);
+        alert("無法載入試卷列表，請檢查網路連線或聯繫管理員。");
+      });
+
+    // 監聽表單提交
+    loginForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      submitButton.disabled = true; // 防止重複提交
+      resultDiv.innerHTML = '<div class="card">查詢中...</div>';
+
+      const formData = new FormData(this);
+      const params = new URLSearchParams(formData);
+      params.append("action", "processForm");
+
+      fetch(GAS_URL, {
+        method: "POST",
+        body: params
+      })
+      .then(res => {
+          if (!res.ok) {
+              throw new Error(`伺服器錯誤: ${res.status}`);
+          }
+          return res.json();
+      })
+      .then(result => {
+        resultDiv.innerHTML = ''; // 清空結果區
+        
+        // 檢查回傳結果是否有錯誤，或紀錄是否為空
+        if (result.error || !result.record || result.record.length === 0) {
+          const errorMessage = result.error ? `錯誤：${result.error}` : '無紀錄或密碼錯誤';
+          resultDiv.innerHTML = `<div class="card">❌ ${errorMessage}</div>`;
+          return;
+        }
+
+        const titleRow = result.title;
+        const records = result.record;
+        records.forEach(row => {
+          let html = '<div class="card">';
+          for (let i = 0; i < titleRow.length; i++) {
+            html += '<div><span class="field-label">' + titleRow[i] + '：</span>';
+            html += '<span class="field-value">' + (row[i] || '-') + '</span></div>';
+          }
+          html += '</div>';
+          resultDiv.innerHTML += html;
+        });
+      })
+      .catch(err => {
+          console.error("查詢失敗:", err);
+          resultDiv.innerHTML = `<div class="card">❌ 查詢失敗，請檢查瀏覽器主控台(F12)的錯誤訊息。</div>`;
+      })
+      .finally(() => {
+          submitButton.disabled = false; // 無論成功失敗，都恢復按鈕功能
+      });
+    });
+  });
+</script>
+  </body>
+</html>
