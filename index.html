@@ -91,7 +91,7 @@
 
     // 載入試卷列表
 fetch(GAS_URL + "?action=getallsheetnames", {
-  method: "GET", // 雖然 GET 是預設值，但明確寫出更清晰
+  method: "POST", 
   headers: {
     "Content-Type": "text/plain;charset=utf-8", // 將 Content-Type 設定為 text/plain
   },
