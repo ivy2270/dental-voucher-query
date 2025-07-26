@@ -12,7 +12,7 @@
         font-family: 'Inter', 'Noto Sans TC', sans-serif;
         line-height: 1.8;
         background-color: #f3f4f6;
-        font-size: 2rem;
+        font-size: 1.5rem;
         background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
           url('https://ymdd-image-tw.s3.ap-east-2.amazonaws.com/file_00000000934461f78931c0c083eafdc7.png');
         background-size: cover;
@@ -65,15 +65,15 @@
         <h2>牙材券查詢系統</h2>
         <form id="loginForm">
           <label class="field-label">姓名：</label><br />
-          <input type="text" name="id" required style="width: 100%; padding: 0.5rem; font-size: 1.2rem;" /><br /><br />
+          <input type="text" name="id" required style="width: 100%; padding: 0.5rem; font-size: 1rem;" /><br /><br />
 
           <label class="field-label">密碼：</label><br />
-          <input type="password" name="passwd" required style="width: 100%; padding: 0.5rem; font-size: 1.2rem;" /><br /><br />
+          <input type="password" name="passwd" required style="width: 100%; padding: 0.5rem; font-size: 1rem;" /><br /><br />
 
-          <label class="field-label">查詢試卷：</label><br />
-          <select name="exam" id="examSelect" style="width: 100%; padding: 0.5rem; font-size: 1.2rem;"></select><br /><br />
+          <label class="field-label">查詢：</label><br />
+          <select name="exam" id="examSelect" style="width: 100%; padding: 0.5rem; font-size: 1rem;"></select><br /><br />
 
-          <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1.2rem; border: none; background-color: #3b82f6; color: white; border-radius: 0.5rem;">查詢</button>
+          <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1rem; border: none; background-color: #3b82f6; color: white; border-radius: 0.5rem;">查詢</button>
         </form>
       </div>
 
@@ -81,7 +81,7 @@
     </div>
 
     <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbymNDAOU_BrFZU3MSE0ngX12B088AEciRfQDzdUoicDtic_90dJ6ntC3fYmz5qF_ZoQ/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbznjcpSSRw_fNSuXYNX3et2HkTemxgNE9LIERbFAEwNYuJBWxNAEZ3IElCD75VpQ4P8/exec";
   
   document.addEventListener("DOMContentLoaded", function () {
     const select = document.getElementById("examSelect");
