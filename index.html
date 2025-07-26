@@ -81,7 +81,7 @@
     </div>
 
     <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyOmtC3S9FEyJ89_mWZ2XYH1kXsTWzWPkQIfL1dxhsimLYNttIRrFcBD5hGoJ5DEw7k/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbymNDAOU_BrFZU3MSE0ngX12B088AEciRfQDzdUoicDtic_90dJ6ntC3fYmz5qF_ZoQ/exec";
   
   document.addEventListener("DOMContentLoaded", function () {
     const select = document.getElementById("examSelect");
@@ -90,22 +90,55 @@
     const submitButton = loginForm.querySelector('button[type="submit"]');
 
     // 載入試卷列表
-    fetch(GAS_URL + "?action=getallsheetnames")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-            data.forEach(name => {
-              const opt = document.createElement("option");
-              opt.value = name;
-              opt.textContent = name;
-              select.appendChild(opt);
-            });
-        }
-      })
-      .catch(err => {
-        console.error("無法載入試卷列表:", err);
-        alert("無法載入試卷列表，請檢查網路連線或聯繫管理員。");
+   fetch(GAS_URL + "?action=getallsheetnames") // 第一個請求：獲取試算表名稱
+  .then(res => res.json())
+  .then(data => {
+    if (Array.isArray(data)) {
+      data.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        // 假設 `select` 是一個已經存在的 DOM 元素，例如 <select id="mySelect"></select>
+        // 如果 `select` 未定義，您需要先獲取它，例如：
+        // const select = document.getElementById("mySelect");
+        select.appendChild(opt);
       });
+    }
+
+    // --- 在這裡加入您的第二個 fetch (POST) 請求 ---
+    // 您的 POST 請求的 DATA，請替換為實際的資料
+    const DATA_FOR_POST = {
+      action: "submitData", // 假設您的 GAS 服務會根據 action 參數處理不同的請求
+      someKey: "someValue",
+      anotherKey: "anotherValue"
+    };
+
+    return fetch(GAS_URL, { // 注意這裡只用 GAS_URL，因為您說 URL 就是 GAS_URL
+      redirect: "follow",
+      method: "POST",
+      body: JSON.stringify(DATA_FOR_POST),
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8", // GAS 通常建議使用 text/plain
+      },
+    })
+    .then(postRes => postRes.json()) // 假設 POST 請求也會返回 JSON 響應
+    .then(postData => {
+      console.log("POST 請求成功，GAS 返回資料:", postData);
+      // 您可以在這裡處理 POST 請求的成功響應，例如顯示成功訊息
+      alert("資料已成功提交！");
+    })
+    .catch(postErr => {
+      console.error("POST 請求失敗:", postErr);
+      alert("資料提交失敗，請檢查網路連線或聯繫管理員。");
+    });
+    // --- 結束第二個 fetch 請求 ---
+
+  })
+  .catch(err => {
+    // 這個 catch 會捕獲第一個 fetch 或第二個 fetch 中發生的任何錯誤
+    console.error("操作失敗 (獲取試卷列表或提交資料):", err);
+    alert("操作失敗，請檢查網路連線或聯繫管理員。");
+  });
 
     // 監聽表單提交
     loginForm.addEventListener("submit", function (e) {
