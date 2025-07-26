@@ -1,111 +1,104 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>牙科券查詢</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>牙材券查詢</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 1rem; }
+    label { display: block; margin-top: 1rem; }
+    input, select, button { width: 100%; padding: 0.5rem; margin-top: 0.5rem; }
+    #result { margin-top: 2rem; white-space: pre-wrap; background: #f8f8f8; padding: 1rem; border: 1px solid #ddd; }
+  </style>
 </head>
 <body>
-    <form id="myForm">
-        <label for="id">ID:</label>
-        <input type="text" id="id" name="id" required><br><br>
+  <h2>牙材券查詢系統</h2>
+  <form id="myForm">
+    <label for="id">ID:</label>
+    <input type="text" id="id" name="id" required>
 
-        <label for="passwd">密碼:</label>
-        <input type="password" id="passwd" name="passwd" required><br><br>
+    <label for="passwd">密碼:</label>
+    <input type="password" id="passwd" name="passwd" required>
 
-        <label for="exam">考試:</label>
-        <select id="exam" name="exam">
-            <option value="">載入中...</option>
-        </select><br><br>
+    <label for="exam">考試:</label>
+    <select id="exam" name="exam">
+      <option value="">載入中...</option>
+    </select>
 
-        <button type="submit">送出</button>
-    </form>
-    <div id="result"></div>
+    <button type="submit">送出查詢</button>
+  </form>
 
-    <script>
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyQiqBnM-qdnCbca-jvBPQG8KYxEhaFHynx0jyB7GdgCL9Xj48EyHvo-4UBPLSRpiu9/exec';
+  <div id="result"></div>
 
-        // 函式：載入試卷列表 (GET 請求不變)
-        async function loadExamList() {
-            const examSelect = document.getElementById('exam');
-            try {
-                const response = await fetch(`${GAS_WEB_APP_URL}?action=getallsheetnames`);
+  <script>
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby_QUYQc9ds2y6Qr2eMQbbLL8safIv3Uqr5NL8jp2Sn6kgk83zDK1dqqwn8AYmE8cxM/exec';
 
-                if (!response.ok) {
-                    throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
-                }
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                examSelect.innerHTML = '';
-                data.sheetNames.forEach(sheetName => {
-                    const option = document.createElement('option');
-                    option.value = sheetName;
-                    option.textContent = sheetName;
-                    examSelect.appendChild(option);
-                });
-            } catch (error) {
-                console.error('無法載入試卷列表:', error);
-                examSelect.innerHTML = '<option value="">載入失敗</option>';
-                alert('無法載入試卷列表: ' + error.message);
-            }
-        }
-
-        // 函式：處理表單提交 (POST 請求改為 GET 傳參)
-        async function processFormSubmission(event) {
-            event.preventDefault();
-
-            const id = document.getElementById('id').value;
-            const passwd = document.getElementById('passwd').value;
-            const exam = document.getElementById('exam').value;
-
-            // 將所有表單數據和 action 放入一個物件
-            const params = {
-                action: 'processForm', // 指定要執行的 Apps Script 動作
-                id: id,
-                passwd: passwd,
-                exam: exam
-            };
-
-            // 將參數轉換為 URL 查詢字串
-            const queryString = new URLSearchParams(params).toString();
-            
-            const resultDiv = document.getElementById('result');
-            resultDiv.textContent = '提交中...';
-
-            try {
-                // *** 關鍵修改：使用 GET 方法並將數據作為 URL 參數傳遞 ***
-                const response = await fetch(`${GAS_WEB_APP_URL}?${queryString}`, {
-                    method: 'GET', // <-- 這裡改為 GET
-                    // headers 和 body 不需要了，因為是 GET 請求，數據在 URL 中
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                if (data.error) {
-                    resultDiv.textContent = '錯誤: ' + data.error;
-                } else {
-                    resultDiv.textContent = '提交成功: ' + JSON.stringify(data);
-                }
-            } catch (error) {
-                console.error('表單提交失敗:', error);
-                resultDiv.textContent = '提交失敗: ' + error.message;
-                alert('表單提交失敗: ' + error.message);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadExamList();
-            const form = document.getElementById('myForm');
-            form.addEventListener('submit', processFormSubmission);
+    // 載入試卷清單（用 POST 傳 action: getallsheetnames）
+    async function loadExamList() {
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'getallsheetnames' })
         });
-    </script>
+        const data = await response.json();
+        const examSelect = document.getElementById('exam');
+        examSelect.innerHTML = '';
+
+        if (data.sheetNames && data.sheetNames.length > 0) {
+          data.sheetNames.forEach(sheet => {
+            const option = document.createElement('option');
+            option.value = sheet;
+            option.textContent = sheet;
+            examSelect.appendChild(option);
+          });
+        } else {
+          examSelect.innerHTML = '<option value="">查無資料</option>';
+        }
+      } catch (error) {
+        alert('無法載入試卷清單：' + error.message);
+      }
+    }
+
+    // 表單提交
+    async function processFormSubmission(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('id').value;
+      const passwd = document.getElementById('passwd').value;
+      const exam = document.getElementById('exam').value;
+
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = '查詢中...';
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'processForm',
+            id: id,
+            passwd: passwd,
+            exam: exam
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          resultDiv.textContent = '❌ ' + data.error;
+        } else {
+          resultDiv.textContent = `✅ 查詢成功：\n\n${JSON.stringify(data, null, 2)}`;
+        }
+      } catch (error) {
+        resultDiv.textContent = '❌ 查詢失敗: ' + error.message;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadExamList();
+      document.getElementById('myForm').addEventListener('submit', processFormSubmission);
+    });
+  </script>
 </body>
 </html>
