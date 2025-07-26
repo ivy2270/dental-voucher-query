@@ -81,91 +81,104 @@
     </div>
 
     <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbznjcpSSRw_fNSuXYNX3et2HkTemxgNE9LIERbFAEwNYuJBWxNAEZ3IElCD75VpQ4P8/exec";
-  
-  document.addEventListener("DOMContentLoaded", function () {
-    const select = document.getElementById("examSelect");
-    const loginForm = document.getElementById("loginForm");
-    const resultDiv = document.getElementById("result");
-    const submitButton = loginForm.querySelector('button[type="submit"]');
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbzBHDO-aKPVxHfRdx3a1OMcljpYK_WoaPB-ckyyYYPuz4L9huGikX18oCj9o7cTiYC-/exec";
+      
+      document.addEventListener("DOMContentLoaded", function () {
+        const select = document.getElementById("examSelect");
+        const loginForm = document.getElementById("loginForm");
+        const resultDiv = document.getElementById("result");
+        const submitButton = loginForm.querySelector('button[type="submit"]');
 
-    // 載入試卷列表
-fetch(GAS_URL + "?action=getallsheetnames", {
-  method: "POST", 
-  headers: {
-    "Content-Type": "text/plain;charset=utf-8", // 將 Content-Type 設定為 text/plain
-  },
-})
-  .then(res => res.json())
-  .then(data => {
-    if (Array.isArray(data)) {
-      data.forEach(name => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
-        // 假設 `select` 是一個已經存在的 DOM 元素，例如 <select id="mySelect"></select>
-        // 如果 `select` 未定義，您需要先獲取它，例如：
-        // const select = document.getElementById("mySelect");
-        select.appendChild(opt);
-      });
-    }
-  })
-  .catch(err => {
-    console.error("無法載入試卷列表:", err);
-    alert("無法載入試卷列表，請檢查網路連線或聯繫管理員。");
-  });
+        // 載入試卷列表 (GET 請求)
+        fetch(GAS_URL + "?action=getallsheetnames", {
+          method: "GET", // <--- 修正為 GET 請求
+          headers: {
+            // 對於 GET 請求，Content-Type 通常不影響行為，但如果 GAS 需要，保留它也無妨。
+            "Content-Type": "text/plain;charset=utf-8",
+          },
+        })
+          .then(res => {
+              if (!res.ok) {
+                  throw new Error(`網路響應不正確: ${res.status}`);
+              }
+              return res.json();
+          })
+          .then(data => {
+            if (Array.isArray(data)) {
+              data.forEach(name => {
+                const opt = document.createElement("option");
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+              });
+            } else {
+                console.error("GAS 返回的資料不是陣列:", data);
+                alert("載入試卷列表失敗：資料格式不正確。");
+            }
+          })
+          .catch(err => {
+            console.error("無法載入試卷列表:", err);
+            alert("無法載入試卷列表，請檢查網路連線或聯繫管理員。");
+          });
 
-    // 監聽表單提交
-    loginForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      submitButton.disabled = true; // 防止重複提交
-      resultDiv.innerHTML = '<div class="card">查詢中...</div>';
+        // 監聽表單提交 (POST 請求)
+        loginForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          submitButton.disabled = true; // 防止重複提交
+          resultDiv.innerHTML = '<div class="card">查詢中...</div>';
 
-      const formData = new FormData(this);
-      const params = new URLSearchParams(formData);
-      params.append("action", "processForm");
+          const formData = new FormData(this);
+          const requestData = { // 將表單數據組合成一個 JavaScript 物件
+            action: "processForm",
+            id: formData.get("id"),
+            passwd: formData.get("passwd"),
+            exam: formData.get("exam")
+          };
 
-      fetch(GAS_URL, {
-        method: "POST",
-        body: params
-      })
-      .then(res => {
-          if (!res.ok) {
-              throw new Error(`伺服器錯誤: ${res.status}`);
-          }
-          return res.json();
-      })
-      .then(result => {
-        resultDiv.innerHTML = ''; // 清空結果區
-        
-        // 檢查回傳結果是否有錯誤，或紀錄是否為空
-        if (result.error || !result.record || result.record.length === 0) {
-          const errorMessage = result.error ? `錯誤：${result.error}` : '無紀錄或密碼錯誤';
-          resultDiv.innerHTML = `<div class="card">❌ ${errorMessage}</div>`;
-          return;
-        }
+          fetch(GAS_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8", // 建議使用此 Content-Type
+            },
+            body: JSON.stringify(requestData) // 將 JavaScript 物件轉換為 JSON 字串
+          })
+          .then(res => {
+              if (!res.ok) {
+                  throw new Error(`伺服器錯誤: ${res.status} - ${res.statusText}`);
+              }
+              return res.json();
+          })
+          .then(result => {
+            resultDiv.innerHTML = ''; // 清空結果區
+            
+            // 檢查回傳結果是否有錯誤，或紀錄是否為空
+            if (result.error || !result.record || result.record.length === 0) {
+              const errorMessage = result.error ? `錯誤：${result.error}` : '無紀錄或密碼錯誤';
+              resultDiv.innerHTML = `<div class="card">❌ ${errorMessage}</div>`;
+              return;
+            }
 
-        const titleRow = result.title;
-        const records = result.record;
-        records.forEach(row => {
-          let html = '<div class="card">';
-          for (let i = 0; i < titleRow.length; i++) {
-            html += '<div><span class="field-label">' + titleRow[i] + '：</span>';
-            html += '<span class="field-value">' + (row[i] || '-') + '</span></div>';
-          }
-          html += '</div>';
-          resultDiv.innerHTML += html;
+            const titleRow = result.title;
+            const records = result.record;
+            records.forEach(row => {
+              let html = '<div class="card">';
+              for (let i = 0; i < titleRow.length; i++) {
+                html += '<div><span class="field-label">' + titleRow[i] + '：</span>';
+                html += '<span class="field-value">' + (row[i] || '-') + '</span></div>';
+              }
+              html += '</div>';
+              resultDiv.innerHTML += html;
+            });
+          })
+          .catch(err => {
+              console.error("查詢失敗:", err);
+              resultDiv.innerHTML = `<div class="card">❌ 查詢失敗，請檢查瀏覽器主控台(F12)的錯誤訊息。</div>`;
+          })
+          .finally(() => {
+              submitButton.disabled = false; // 無論成功失敗，都恢復按鈕功能
+          });
         });
-      })
-      .catch(err => {
-          console.error("查詢失敗:", err);
-          resultDiv.innerHTML = `<div class="card">❌ 查詢失敗，請檢查瀏覽器主控台(F12)的錯誤訊息。</div>`;
-      })
-      .finally(() => {
-          submitButton.disabled = false; // 無論成功失敗，都恢復按鈕功能
       });
-    });
-  });
-</script>
+    </script>
   </body>
 </html>
