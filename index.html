@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>牙科券查詢</title>
-    </head>
+</head>
 <body>
     <form id="myForm">
         <label for="id">ID:</label>
@@ -23,15 +23,12 @@
     <div id="result"></div>
 
     <script>
-        // 你的 Google Apps Script Web App URL
-        // 請確保這是你最新部署的、權限設定為「任何人」的 URL
         const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyQiqBnM-qdnCbca-jvBPQG8KYxEhaFHynx0jyB7GdgCL9Xj48EyHvo-4UBPLSRpiu9/exec';
 
-        // 函式：載入試卷列表
+        // 函式：載入試卷列表 (GET 請求不變)
         async function loadExamList() {
             const examSelect = document.getElementById('exam');
             try {
-                // 使用 GET 請求獲取 sheet names
                 const response = await fetch(`${GAS_WEB_APP_URL}?action=getallsheetnames`);
 
                 if (!response.ok) {
@@ -43,7 +40,7 @@
                     throw new Error(data.error);
                 }
 
-                examSelect.innerHTML = ''; // 清空現有選項
+                examSelect.innerHTML = '';
                 data.sheetNames.forEach(sheetName => {
                     const option = document.createElement('option');
                     option.value = sheetName;
@@ -57,34 +54,33 @@
             }
         }
 
-        // 函式：處理表單提交
+        // 函式：處理表單提交 (POST 請求改為 GET 傳參)
         async function processFormSubmission(event) {
-            event.preventDefault(); // 阻止表單預設提交行為
+            event.preventDefault();
 
             const id = document.getElementById('id').value;
             const passwd = document.getElementById('passwd').value;
             const exam = document.getElementById('exam').value;
 
-            const formData = {
+            // 將所有表單數據和 action 放入一個物件
+            const params = {
                 action: 'processForm', // 指定要執行的 Apps Script 動作
                 id: id,
                 passwd: passwd,
                 exam: exam
             };
 
+            // 將參數轉換為 URL 查詢字串
+            const queryString = new URLSearchParams(params).toString();
+            
             const resultDiv = document.getElementById('result');
             resultDiv.textContent = '提交中...';
 
             try {
-                // *** 這裡是你需要修改的地方 ***
-                const response = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    headers: {
-                        // 關鍵修改：使用 text/plain;charset=utf-8
-                        'Content-Type': 'text/plain;charset=utf-8', 
-                    },
-                    // 將物件轉換為 JSON 字串作為請求體
-                    body: JSON.stringify(formData),
+                // *** 關鍵修改：使用 GET 方法並將數據作為 URL 參數傳遞 ***
+                const response = await fetch(`${GAS_WEB_APP_URL}?${queryString}`, {
+                    method: 'GET', // <-- 這裡改為 GET
+                    // headers 和 body 不需要了，因為是 GET 請求，數據在 URL 中
                 });
 
                 if (!response.ok) {
@@ -97,7 +93,6 @@
                     resultDiv.textContent = '錯誤: ' + data.error;
                 } else {
                     resultDiv.textContent = '提交成功: ' + JSON.stringify(data);
-                    // 根據實際的 Apps Script 回傳結果顯示
                 }
             } catch (error) {
                 console.error('表單提交失敗:', error);
@@ -106,11 +101,10 @@
             }
         }
 
-        // 當 DOM 內容載入完畢後執行
         document.addEventListener('DOMContentLoaded', () => {
-            loadExamList(); // 載入試卷列表
+            loadExamList();
             const form = document.getElementById('myForm');
-            form.addEventListener('submit', processFormSubmission); // 綁定表單提交事件
+            form.addEventListener('submit', processFormSubmission);
         });
     </script>
 </body>
