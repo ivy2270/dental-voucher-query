@@ -1,184 +1,117 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>牙材券查詢系統</title>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        font-family: 'Inter', 'Noto Sans TC', sans-serif;
-        line-height: 1.8;
-        background-color: #f3f4f6;
-        font-size: 1.5rem;
-        background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
-          url('https://ymdd-image-tw.s3.ap-east-2.amazonaws.com/file_00000000934461f78931c0c083eafdc7.png');
-        background-size: cover;
-        background-repeat: no-repeat;
-        background-position: center top;
-        background-attachment: scroll;
-      }
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牙科券查詢</title>
+    </head>
+<body>
+    <form id="myForm">
+        <label for="id">ID:</label>
+        <input type="text" id="id" name="id" required><br><br>
 
-      @media (min-width: 768px) {
-        html, body {
-          font-size: 1rem;
-          background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
-            url('https://ymdd-image-tw.s3.ap-east-2.amazonaws.com/photo_2025-07-25_22-19-42.jpg');
-        }
-      }
+        <label for="passwd">密碼:</label>
+        <input type="password" id="passwd" name="passwd" required><br><br>
 
-      .container {
-        max-width: 768px;
-        margin: 0 auto;
-        padding: 2rem;
-      }
+        <label for="exam">考試:</label>
+        <select id="exam" name="exam">
+            <option value="">載入中...</option>
+        </select><br><br>
 
-      .card {
-        background-color: #ffffff;
-        padding: 1.5rem;
-        border-radius: 1.25rem;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        margin-bottom: 2rem;
-        border: 1px solid #e5e7eb;
-      }
-
-      .field-label {
-        font-weight: 600;
-        color: #6b7280;
-        margin-bottom: 0.5rem;
-        font-size: 1.6rem;
-      }
-
-      .field-value {
-        color: #111827;
-        margin-bottom: 1rem;
-        font-size: 2rem;
-        word-break: break-word;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="card">
-        <h2>牙材券查詢系統</h2>
-        <form id="loginForm">
-          <label class="field-label">姓名：</label><br />
-          <input type="text" name="id" required style="width: 100%; padding: 0.5rem; font-size: 1rem;" /><br /><br />
-
-          <label class="field-label">密碼：</label><br />
-          <input type="password" name="passwd" required style="width: 100%; padding: 0.5rem; font-size: 1rem;" /><br /><br />
-
-          <label class="field-label">查詢：</label><br />
-          <select name="exam" id="examSelect" style="width: 100%; padding: 0.5rem; font-size: 1rem;"></select><br /><br />
-
-          <button type="submit" style="padding: 0.75rem 1.5rem; font-size: 1rem; border: none; background-color: #3b82f6; color: white; border-radius: 0.5rem;">查詢</button>
-        </form>
-      </div>
-
-      <div id="result"></div>
-    </div>
+        <button type="submit">送出</button>
+    </form>
+    <div id="result"></div>
 
     <script>
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbx-StoFjy0HCzG3CBcLB8ViEYezLr8soXoNJCqlLv1HKwJYtJvBBRf-5UP5PJLsTX23/exec";
-      
-      document.addEventListener("DOMContentLoaded", function () {
-        const select = document.getElementById("examSelect");
-        const loginForm = document.getElementById("loginForm");
-        const resultDiv = document.getElementById("result");
-        const submitButton = loginForm.querySelector('button[type="submit"]');
+        // 你的 Google Apps Script Web App URL
+        // 請確保這是你最新部署的、權限設定為「任何人」的 URL
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx-StoFjy0HCzG3CBcLB8ViEYezLr8soXoNJCqlLv1HKwJYtJvBBRf-5UP5PJLsTX23/exec';
 
-        // 載入試卷列表 (GET 請求)
-        fetch(GAS_URL + "?action=getallsheetnames", {
-          method: "POST", // <--- 修正為 GET 請求
-          headers: {
-            // 對於 GET 請求，Content-Type 通常不影響行為，但如果 GAS 需要，保留它也無妨。
-            "Content-Type": "text/plain;charset=utf-8",
-          },
-        })
-          .then(res => {
-              if (!res.ok) {
-                  throw new Error(`網路響應不正確: ${res.status}`);
-              }
-              return res.json();
-          })
-          .then(data => {
-            if (Array.isArray(data)) {
-              data.forEach(name => {
-                const opt = document.createElement("option");
-                opt.value = name;
-                opt.textContent = name;
-                select.appendChild(opt);
-              });
-            } else {
-                console.error("GAS 返回的資料不是陣列:", data);
-                alert("載入試卷列表失敗：資料格式不正確。");
+        // 函式：載入試卷列表
+        async function loadExamList() {
+            const examSelect = document.getElementById('exam');
+            try {
+                // 使用 GET 請求獲取 sheet names
+                const response = await fetch(`${GAS_WEB_APP_URL}?action=getallsheetnames`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                examSelect.innerHTML = ''; // 清空現有選項
+                data.sheetNames.forEach(sheetName => {
+                    const option = document.createElement('option');
+                    option.value = sheetName;
+                    option.textContent = sheetName;
+                    examSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('無法載入試卷列表:', error);
+                examSelect.innerHTML = '<option value="">載入失敗</option>';
+                alert('無法載入試卷列表: ' + error.message);
             }
-          })
-          .catch(err => {
-            console.error("無法載入試卷列表:", err);
-            alert("無法載入試卷列表，請檢查網路連線或聯繫管理員。");
-          });
+        }
 
-        // 監聽表單提交 (POST 請求)
-        loginForm.addEventListener("submit", function (e) {
-          e.preventDefault();
-          submitButton.disabled = true; // 防止重複提交
-          resultDiv.innerHTML = '<div class="card">查詢中...</div>';
+        // 函式：處理表單提交
+        async function processFormSubmission(event) {
+            event.preventDefault(); // 阻止表單預設提交行為
 
-          const formData = new FormData(this);
-          const requestData = { // 將表單數據組合成一個 JavaScript 物件
-            action: "processForm",
-            id: formData.get("id"),
-            passwd: formData.get("passwd"),
-            exam: formData.get("exam")
-          };
+            const id = document.getElementById('id').value;
+            const passwd = document.getElementById('passwd').value;
+            const exam = document.getElementById('exam').value;
 
-          fetch(GAS_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "text/plain;charset=utf-8", // 建議使用此 Content-Type
-            },
-            body: JSON.stringify(requestData) // 將 JavaScript 物件轉換為 JSON 字串
-          })
-          .then(res => {
-              if (!res.ok) {
-                  throw new Error(`伺服器錯誤: ${res.status} - ${res.statusText}`);
-              }
-              return res.json();
-          })
-          .then(result => {
-            resultDiv.innerHTML = ''; // 清空結果區
-            
-            // 檢查回傳結果是否有錯誤，或紀錄是否為空
-            if (result.error || !result.record || result.record.length === 0) {
-              const errorMessage = result.error ? `錯誤：${result.error}` : '無紀錄或密碼錯誤';
-              resultDiv.innerHTML = `<div class="card">❌ ${errorMessage}</div>`;
-              return;
+            const formData = {
+                action: 'processForm', // 指定要執行的 Apps Script 動作
+                id: id,
+                passwd: passwd,
+                exam: exam
+            };
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = '提交中...';
+
+            try {
+                // *** 這裡是你需要修改的地方 ***
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        // 關鍵修改：使用 text/plain;charset=utf-8
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    },
+                    // 將物件轉換為 JSON 字串作為請求體
+                    body: JSON.stringify(formData),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP 錯誤! 狀態: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    resultDiv.textContent = '錯誤: ' + data.error;
+                } else {
+                    resultDiv.textContent = '提交成功: ' + JSON.stringify(data);
+                    // 根據實際的 Apps Script 回傳結果顯示
+                }
+            } catch (error) {
+                console.error('表單提交失敗:', error);
+                resultDiv.textContent = '提交失敗: ' + error.message;
+                alert('表單提交失敗: ' + error.message);
             }
+        }
 
-            const titleRow = result.title;
-            const records = result.record;
-            records.forEach(row => {
-              let html = '<div class="card">';
-              for (let i = 0; i < titleRow.length; i++) {
-                html += '<div><span class="field-label">' + titleRow[i] + '：</span>';
-                html += '<span class="field-value">' + (row[i] || '-') + '</span></div>';
-              }
-              html += '</div>';
-              resultDiv.innerHTML += html;
-            });
-          })
-          .catch(err => {
-              console.error("查詢失敗:", err);
-              resultDiv.innerHTML = `<div class="card">❌ 查詢失敗，請檢查瀏覽器主控台(F12)的錯誤訊息。</div>`;
-          })
-          .finally(() => {
-              submitButton.disabled = false; // 無論成功失敗，都恢復按鈕功能
-          });
+        // 當 DOM 內容載入完畢後執行
+        document.addEventListener('DOMContentLoaded', () => {
+            loadExamList(); // 載入試卷列表
+            const form = document.getElementById('myForm');
+            form.addEventListener('submit', processFormSubmission); // 綁定表單提交事件
         });
-      });
     </script>
-  </body>
+</body>
 </html>
